@@ -1,9 +1,8 @@
-import com.sun.tools.sjavac.client.SjavacClient;
-
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.HashMap;
 
 
 public class JavaCoapClient {
@@ -65,11 +64,6 @@ public class JavaCoapClient {
                 data[i] = i < header.length ? header[i] : payload[i - (header.length)];
             }
         }
-        System.out.println(new String(data).trim());
-        /*System.out.println(Arrays.toString(data));
-        for(int i = 0; i < data.length; i++) {
-            System.out.println(data[i] & 0xFF);
-        }*/
         DatagramPacket request = new DatagramPacket(data, data.length, ip, PORT);
         ds.send(request);
     }
@@ -77,12 +71,43 @@ public class JavaCoapClient {
     public static void receive() throws IOException {
         byte[] data = new byte[65535];
         DatagramPacket pkt = new DatagramPacket(data, data.length);
-        //pkt.setLength(data.length);
         ds.receive(pkt);
-        System.out.println(pkt);
         byte[] data1 = pkt.getData();
         int[] intdata = new int[data1.length];
-        System.out.println(new String(data1).trim());
+        int split = 0;
+        for(int i = 0; i<data1.length; i++){
+            if(data1[i] == (byte)255) {
+                split = i;
+                break;
+            }
+        }
+        byte[] header = new byte[split];
+        byte[] payload = new byte[data1.length-split];
+        for(int i = 0; i< data1.length; i++){
+            if(i<split){
+                header[i] = data1[i];
+            }else if(i>split){
+                payload[i-split] = data1[i];
+            }
+        }
+        HashMap<Integer, String> responseCode = new HashMap<Integer, String>();
+        responseCode.put(65, "Created");
+        responseCode.put(66, "Deleted");
+        responseCode.put(67, "Valid");
+        responseCode.put(68, "Changed");
+        responseCode.put(69, "Content");
+        responseCode.put(95, "Continue");
+        responseCode.put(128, "Bad Request");
+        responseCode.put(129, "Unauthorized");
+        responseCode.put(130, "Bad Option");
+        responseCode.put(131, "Forbidden");
+        responseCode.put(132, "Not Found");
+        responseCode.put(133, "Method Not Allowed");
+        responseCode.put(134, "Not Acceptable");
+        responseCode.put(136, "Request Entity Incomplete");
+
+        System.out.println("Response Code: " + (data1[1] & 0xFF) + " " + responseCode.get(data1[1] & 0xFF));
+        System.out.println("Payload: " + new String(payload).trim());
         /*for(int i = 0; i < data1.length; i++) {
             System.out.println(data1[i] & 0xFF);
         }*/
